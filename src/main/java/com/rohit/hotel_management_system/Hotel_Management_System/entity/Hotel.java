@@ -22,12 +22,13 @@ public class Hotel {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private String city;
 
-    @Column(columnDefinition = "TEXT[]")
+    @Column(columnDefinition = "TEXT[]")     // stores the url of images
     private String[] photos;
 
-    @Column(columnDefinition = "TEXT[]")
+    @Column(columnDefinition = "TEXT[]")     // stores the list of amenities -> Wi-Fi, and all
     private String[] amenities;
 
     @CreationTimestamp
@@ -37,9 +38,15 @@ public class Hotel {
     private LocalDateTime updatedAt;
 
     @Embedded
-    private HotelContactInfo hotelInfo;
+    private HotelContactInfo contactInfo;
 
     @Column(nullable = false)
     private Boolean active;
+
+    @ManyToOne
+    private User owner;
+
+    @OneToMany(mappedBy = "hotel")
+    private List<Room> rooms;
 
 }

@@ -1,7 +1,6 @@
 package com.rohit.hotel_management_system.Hotel_Management_System.entity;
 
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.Entity;
 import lombok.Getter;
 import lombok.Setter;
 

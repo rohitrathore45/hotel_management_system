@@ -12,15 +12,12 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
+@Table(name = "room")
 public class Room {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "hotel_id", nullable = false)
-    private Hotel hotel;
 
     @Column(nullable = false)
     private String type;
@@ -28,11 +25,18 @@ public class Room {
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal basePrice;
 
-    @Column(columnDefinition = "TEXT[]")
-    private String[] photos;
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
     @Column(columnDefinition = "TEXT[]")
     private String[] amenities;
+
+    @Column(columnDefinition = "TEXT[]")
+    private String[] photos;
 
     @Column(nullable = false)
     private Integer totalCount;
@@ -40,10 +44,7 @@ public class Room {
     @Column(nullable = false)
     private Integer capacity;
 
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hotel_id", nullable = false)
+    private Hotel hotel;
 }
