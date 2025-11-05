@@ -1,5 +1,6 @@
 package com.rohit.hotel_management_system.Hotel_Management_System.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
