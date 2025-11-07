@@ -6,13 +6,16 @@ import com.rohit.hotel_management_system.Hotel_Management_System.dto.HotelInfoDt
 import com.rohit.hotel_management_system.Hotel_Management_System.dto.RoomDto;
 import com.rohit.hotel_management_system.Hotel_Management_System.entity.Hotel;
 import com.rohit.hotel_management_system.Hotel_Management_System.entity.Room;
+import com.rohit.hotel_management_system.Hotel_Management_System.entity.User;
 import com.rohit.hotel_management_system.Hotel_Management_System.exception.ResourceNotFoundException;
+import com.rohit.hotel_management_system.Hotel_Management_System.exception.UnAuthorisedException;
 import com.rohit.hotel_management_system.Hotel_Management_System.repository.HotelRepository;
 import com.rohit.hotel_management_system.Hotel_Management_System.repository.RoomRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,6 +35,10 @@ public class HotelServiceImplementation implements HotelService{
         log.info("Creating new Hotel with name : {}", hotelDto.getName());
         Hotel hotel = modelMapper.map(hotelDto, Hotel.class);
         hotel.setActive(false);
+
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        hotel.setOwner(user);
+
         hotel = hotelRepository.save(hotel);
         log.info("Created new Hotel with id : {}", hotel.getId());
         return modelMapper.map(hotel, HotelDto.class);
@@ -43,6 +50,11 @@ public class HotelServiceImplementation implements HotelService{
         Hotel hotel = hotelRepository
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with id : " + id));
+
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!user.equals(hotel.getOwner())) {
+            throw new UnAuthorisedException("this user does not own this hotel with id : " + id);
+        }
         log.info("Successfully  fetched the hotel with id {} ", id);
         return modelMapper.map(hotel, HotelDto.class);
     }
@@ -54,6 +66,11 @@ public class HotelServiceImplementation implements HotelService{
         Hotel hotel = hotelRepository
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with id : " + id));
+
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!user.equals(hotel.getOwner())) {
+            throw new UnAuthorisedException("this user does not own this hotel with id : " + id);
+        }
 
         modelMapper.map(hotelDto, hotel);
         hotel.setId(id);
@@ -70,6 +87,11 @@ public class HotelServiceImplementation implements HotelService{
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with id : " + id));
 
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!user.equals(hotel.getOwner())) {
+            throw new UnAuthorisedException("this user does not own this hotel with id : " + id);
+        }
+
         for(Room room : hotel.getRooms()){
             inventoryService.deleteInventories(room);
             roomRepository.deleteById(room.getId());
@@ -84,6 +106,11 @@ public class HotelServiceImplementation implements HotelService{
         Hotel hotel = hotelRepository
                 .findById(hotelId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with id : " + hotelId));
+
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!user.equals(hotel.getOwner())) {
+            throw new UnAuthorisedException("this user does not own this hotel with id : " + hotelId);
+        }
 
         hotel.setActive(true);
 

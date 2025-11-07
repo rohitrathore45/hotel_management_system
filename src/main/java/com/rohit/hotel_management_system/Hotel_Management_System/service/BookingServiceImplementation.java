@@ -7,11 +7,13 @@ import com.rohit.hotel_management_system.Hotel_Management_System.dto.GuestDto;
 import com.rohit.hotel_management_system.Hotel_Management_System.entity.*;
 import com.rohit.hotel_management_system.Hotel_Management_System.entity.enums.BookingStatus;
 import com.rohit.hotel_management_system.Hotel_Management_System.exception.ResourceNotFoundException;
+import com.rohit.hotel_management_system.Hotel_Management_System.exception.UnAuthorisedException;
 import com.rohit.hotel_management_system.Hotel_Management_System.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -93,6 +95,12 @@ public class BookingServiceImplementation implements BookingService{
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id " + bookingId));
 
+        User user = getCurrentUser();
+
+        if(!user.equals(booking.getUser())) {
+            throw new UnAuthorisedException("Booking does not belong to this user with id: " + user.getId());
+        }
+
         if(hasBookingExpired(booking)){
             throw new IllegalStateException("Booking has already expired");
         }
@@ -102,7 +110,7 @@ public class BookingServiceImplementation implements BookingService{
 
         for(GuestDto guestDto : guestDtoList){
             Guest guest = modelMapper.map(guestDto, Guest.class);
-            guest.setUser(getCurrentUser());
+            guest.setUser(user);
             guest = guestRepository.save(guest);
 
             booking.getGuests().add(guest);
@@ -119,9 +127,6 @@ public class BookingServiceImplementation implements BookingService{
     }
 
     public User getCurrentUser(){
-        // Create the booking
-        User user = new User();
-        user.setId(1L); // TODO: Remove the dummy user
-        return user;
+        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 }
