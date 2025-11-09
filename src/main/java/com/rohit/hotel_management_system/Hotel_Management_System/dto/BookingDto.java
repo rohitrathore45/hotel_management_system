@@ -4,6 +4,7 @@ package com.rohit.hotel_management_system.Hotel_Management_System.dto;
 import com.rohit.hotel_management_system.Hotel_Management_System.entity.enums.BookingStatus;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -18,4 +19,5 @@ public class BookingDto {
     private Integer roomsCount;
     private BookingStatus bookingStatus;
     private Set<GuestDto> guests;
+    private BigDecimal amount;
 }
