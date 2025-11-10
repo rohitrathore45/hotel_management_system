@@ -1,29 +1,37 @@
 package com.rohit.hotel_management_system.Hotel_Management_System.service;
 
 
-import com.rohit.hotel_management_system.Hotel_Management_System.dto.HotelDto;
-import com.rohit.hotel_management_system.Hotel_Management_System.dto.HotelPriceDto;
-import com.rohit.hotel_management_system.Hotel_Management_System.dto.HotelSearchRequest;
+import com.rohit.hotel_management_system.Hotel_Management_System.dto.*;
 import com.rohit.hotel_management_system.Hotel_Management_System.entity.Hotel;
 import com.rohit.hotel_management_system.Hotel_Management_System.entity.Inventory;
 import com.rohit.hotel_management_system.Hotel_Management_System.entity.Room;
+import com.rohit.hotel_management_system.Hotel_Management_System.entity.User;
+import com.rohit.hotel_management_system.Hotel_Management_System.exception.ResourceNotFoundException;
 import com.rohit.hotel_management_system.Hotel_Management_System.repository.HotelMinPriceRepository;
 import com.rohit.hotel_management_system.Hotel_Management_System.repository.InventoryRepository;
+import com.rohit.hotel_management_system.Hotel_Management_System.repository.RoomRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.rohit.hotel_management_system.Hotel_Management_System.util.AppUtils.getCurrentUser;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class InventoryServiceImplementation implements InventoryService{
+    private final RoomRepository roomRepository;
     private final ModelMapper modelMapper;
 
     private final InventoryRepository inventoryRepository;
@@ -80,5 +88,41 @@ public class InventoryServiceImplementation implements InventoryService{
         );
 
         return hotelPage;
+    }
+
+    @Override
+    public List<InventoryDto> getAllInventoryByRoom(Long roomId) {
+        log.info("Getting all inventory by room for room with id : {}", roomId);
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Room not found with id : " + roomId));
+
+        User user = getCurrentUser();
+        if(!user.equals(room.getHotel().getOwner())) throw new AccessDeniedException("You are not the owner of room with id : " + roomId);
+
+        return inventoryRepository.findByRoomOrderByDate(room).stream()
+                .map((element) -> modelMapper.map(element, InventoryDto.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void updateInventory(Long roomId, UpdateInventoryRequestDto updateInventoryRequestDto) {
+        log.info("Updating all inventory by room for room with id : {} between date range : {} - {}",
+                roomId, updateInventoryRequestDto.getStartDate(), updateInventoryRequestDto.getEndDate());
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Room not found with id : " + roomId));
+
+        User user = getCurrentUser();
+        if(!user.equals(room.getHotel().getOwner())) throw new AccessDeniedException("You are not the owner of room with id : " + roomId);
+
+        inventoryRepository.getInventoryAndLockBeforeUpdate(roomId,
+                updateInventoryRequestDto.getStartDate(),
+                updateInventoryRequestDto.getEndDate());
+
+        inventoryRepository.updateInventory(roomId, updateInventoryRequestDto.getStartDate(),
+                updateInventoryRequestDto.getEndDate(),
+                updateInventoryRequestDto.getSurgeFactor(),
+                updateInventoryRequestDto.getClosed());
     }
 }
